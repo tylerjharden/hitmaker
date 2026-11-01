@@ -2,7 +2,7 @@
 name: hitmaker
 description: "Use when making an in-the-style-of hit in Suno (never a clone). Measures a reference, composes an original demo, writes original lyrics and the config."
 version: 1.0.0
-author: Tyler (Suno power user) + Hermes Agent
+author: Tyler Harden (tylerjharden) + Hermes Agent
 license: MIT
 platforms: [linux, macos]
 metadata:

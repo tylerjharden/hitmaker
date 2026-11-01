@@ -10,7 +10,7 @@ song first, then chop it.
 
 ## Install (Hermes Agent)
 ```
-hermes skills tap add <owner>/hitmaker
+hermes skills tap add tylerjharden/hitmaker
 hermes skills install hitmaker
 bash ~/.hermes/skills/hitmaker/scripts/setup.sh      # one-time: audio/ML venv (CPU), needs ffmpeg
 ```
