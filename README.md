@@ -15,7 +15,7 @@ Then ask your agent: "use hitmaker to make a Suno song in the style of <artist -
 ## What it does
 `scripts/hitmaker.py` stages: fetch, stems (demucs), tempo (grid lock, alias sweep, fine drift sweep, downbeat,
 swing), analyze (sections, vocal map, key, tuning), notes (riffs, piano loop), voices (flow stats, who speaks
-where, hook positions; transcript kept private), transcribe (MIDI), render (hiphop/bass palettes), validate
+where, hook positions; transcript kept private), transcribe (MIDI, for measuring), compose (an ORIGINAL upload demo from the measured facts, so Suno accepts it), render (hiphop/bass palettes), similarity (copy-risk gate), validate
 (harmony/arrangement/tempo vs the original), check (Suno character limits, 0 shared 4-grams with the original).
 
 Results on real tracks: the GodLovesUgly (Atmosphere) demo scored harmony 0.93, arrangement 0.95 and locked at

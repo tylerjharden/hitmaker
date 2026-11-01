@@ -11,6 +11,10 @@
 - **The user expects you to look the tempo up.** Then verify, because databases are often 0.5 BPM off or list a
   double-time alias.
 
+- **Suno rejects uploads that match its catalog.** The transcribed GodLovesUgly demo (similarity 0.92) was rejected as
+  "matches a song in our catalog". The Chromatek transcription got through, but don't rely on that. Compose the upload demo from
+  measured facts (new key, tempo, notes) and gate it with `similarity`.
+
 ## Analysis
 - Chromatek read 107.7 BPM in every librosa estimate. It's 160 BPM halftime (107.7 is the 2:3 alias). Grid-lock the drum stem.
 - GodLovesUgly: databases said 183 and 91.5; a coarse lock said 91.0; the fine drift sweep found 91.04 (2 ms drift vs 67 ms at 91.0).

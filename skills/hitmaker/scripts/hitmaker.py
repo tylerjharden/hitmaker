@@ -451,6 +451,52 @@ def cmd_validate(a):
     print('targets: harmony >= 0.85, arrangement >= 0.6, demo locks hardest at the project BPM')
 
 
+# ------------------------------------------------------------------ compose (original demo from facts)
+def cmd_compose(a):
+    here = Path(__file__).resolve().parent; sys.path.insert(0, str(here))
+    import hm_compose
+    d = P(a.project); d.mkdir(parents=True, exist_ok=True)
+    plan = json.load(open(a.plan))
+    info = hm_compose.compose(plan, d/'reference.mid')
+    save_proj(d, **info, composed=True)
+    print(f"wrote reference.mid: ORIGINAL composition, {info['bpm']} BPM, {info['key']}, {len(info['sections'])} sections, {info['duration']:.0f}s")
+    print('next: render --palette ..., then similarity --original <analyzed original project>')
+
+
+# ------------------------------------------------------------------ similarity (copy-risk proxy)
+def beat_chroma(path, bpm, downbeat, sr=SR_A):
+    import librosa
+    y = librosa.load(str(path), sr=sr, mono=True)[0]
+    C = librosa.feature.chroma_cqt(y=librosa.effects.harmonic(y), sr=sr, hop_length=512)
+    t = librosa.times_like(C, sr=sr, hop_length=512); spb = 60/bpm
+    beats = np.arange(downbeat, t[-1]-spb, spb)
+    B = np.array([C[:, (t >= b) & (t < b+spb)].mean(1) for b in beats]).T
+    keep = B.sum(0) > 1e-6
+    return B[:, keep] / (np.linalg.norm(B[:, keep], axis=0)+1e-9)
+
+def cmd_similarity(a):
+    """Tempo- and key-invariant melodic/harmonic similarity of the demo to the original, in 8-beat windows.
+    A transcription scores near 1.0. An original piece in the same style should score clearly lower.
+    This is a proxy: Suno's real fingerprint check is unknown."""
+    d = P(a.project); p = load_proj(d); o = P(a.original); po = load_proj(o)
+    A = beat_chroma(d/'reference_demo.wav', p['bpm'], 0.0)   # rendered demos start on a bar line
+    src = o/'original.mp3'
+    if a.instrumental and (o/'stems').exists():
+        import librosa, soundfile as sf
+        mix = sum(librosa.load(str(o/'stems'/f'{n}.wav'), sr=SR_A)[0] for n in ('bass', 'other'))
+        src = o/'.private'/'_inst.wav'; (o/'.private').mkdir(exist_ok=True); sf.write(src, mix, SR_A)
+    B = beat_chroma(src, po['bpm'], po['downbeat'])
+    W = 8
+    def wins(X): return np.array([X[:, i:i+W].flatten() for i in range(0, X.shape[1]-W, 2)])
+    wa = wins(A); wa = wa/np.linalg.norm(wa, axis=1, keepdims=True)
+    best = np.zeros(len(wa))
+    for r in range(12):
+        wb = wins(np.roll(B, r, axis=0)); wb = wb/np.linalg.norm(wb, axis=1, keepdims=True)
+        best = np.maximum(best, (wa @ wb.T).max(1))
+    print(f'copy-risk similarity (best key/tempo-invariant match per 8-beat window): median {np.median(best):.3f}, '
+          f'90th pct {np.percentile(best, 90):.3f}, max {best.max():.3f}')
+    save_proj(d, similarity_median=float(np.median(best)), similarity_p90=float(np.percentile(best, 90)))
+
 # ------------------------------------------------------------------ check
 def cmd_check(a):
     bad = False
@@ -506,6 +552,10 @@ def main():
     s = sp.add_parser('render'); s.add_argument('project'); s.add_argument('--palette', choices=['hiphop', 'bass'], default='hiphop')
     s.add_argument('--drops', default='', help='comma list of section indexes that are drops (bass palette)'); s.set_defaults(f=cmd_render)
     s = sp.add_parser('validate'); s.add_argument('project'); s.set_defaults(f=cmd_validate)
+    s = sp.add_parser('compose'); s.add_argument('project'); s.add_argument('--plan', required=True); s.set_defaults(f=cmd_compose)
+    s = sp.add_parser('similarity'); s.add_argument('project'); s.add_argument('--original', required=True)
+    s.add_argument('--instrumental', action='store_true', help='compare against the original bass+other stems only')
+    s.set_defaults(f=cmd_similarity)
     s = sp.add_parser('check'); s.add_argument('--style'); s.add_argument('--lyrics'); s.add_argument('--original-words')
     s.set_defaults(f=cmd_check)
     a = ap.parse_args(); a.f(a)

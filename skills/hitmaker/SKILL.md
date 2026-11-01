@@ -46,13 +46,18 @@ $PY $HM analyze proj [--k 14 | --sections a,b,..]  # section map, vocal map, key
 $PY $HM notes   proj --stem bass  --start 41 --bars 4   # riff / hook notes + chord colour
 $PY $HM notes   proj --stem other --start 9  --bars 4   # piano/keys loop
 $PY $HM voices  proj                               # flow stats per phrase + voice register (kids/female/male), hooks
-$PY $HM transcribe proj                            # reference.mid (bass, keys, lead, drums). No original vocal
-$PY $HM render  proj --palette hiphop|bass [--drops 3,5]   # reference_demo.mp3 (instrumental) + stems
+$PY $HM transcribe proj                            # reference.mid: analysis copy of the original (bass, keys, lead, drums)
+$PY $HM render  proj --palette hiphop|bass [--drops 3,5]   # demo audio + stems
 $PY $HM validate proj                              # harmony, arrangement and tempo-lock scores vs the original
+# UPLOAD DEMO = an ORIGINAL composition from the measured facts (a transcription of a known song gets rejected by Suno)
+$PY $HM compose  song --plan plan.json             # new key/tempo/melody/voicings/bass, same feel + chord colours + arrangement
+$PY $HM render   song --palette hiphop
+$PY $HM similarity song --original proj            # copy-risk proxy: transcription 0.92, unrelated tracks 0.79-0.81; ship at 0.82 or below
 $PY $HM check --style style.txt --lyrics lyrics.txt --original-words proj/.private/vocal_words.json
 ```
 Stage details, thresholds and how to read each output: `references/pipeline.md`.
-Files: `scripts/hitmaker.py` (all stages), `scripts/hm_render.py` (synth palettes used by `render`), `scripts/setup.sh`.
+Files: `scripts/hitmaker.py` (all stages), `scripts/hm_render.py` (synth palettes used by `render`),
+`scripts/hm_compose.py` (plan-file composer used by `compose`), `scripts/setup.sh`, plan example `templates/plan_example.json`.
 
 ## Rules that matter most
 1. **Tempo: look it up online first, then verify by grid lock.** Databases are often off by 0.5 BPM or list a
@@ -63,7 +68,10 @@ Files: `scripts/hitmaker.py` (all stages), `scripts/hm_render.py` (synth palette
 3. **Don't trust vision-model reads of spectrograms for structure.** Use `analyze` numbers.
 4. **Never print, quote or reuse the original lyrics.** `voices` keeps the transcript in `.private/` and prints
    only statistics. `check` must show **0 shared 4-grams** before you deliver lyrics.
-5. **The reference demo is instrumental.** Your lyrics replace the original vocal; Suno performs them.
+5. **The uploaded demo is instrumental and ORIGINAL.** Transcribe the reference only to measure and validate. Suno rejects
+   uploads that fingerprint-match its catalog ("matches a song in our catalog"), and a transcription is a copy anyway. Upload a
+   `compose`d demo: key ±2-3 semitones, tempo ±2-4%, new melody/voicings/bass/kick pattern, different loop length,
+   with the same feel, swing, chord colours and arrangement. Gate: `similarity` ≤ 0.82. Your lyrics replace the vocal.
 6. **Style field ≤ 1000 chars** (Suno truncates silently); lyrics ≤ about 3000. `check` counts both.
 7. **Variety Off** with an engineered brief. Any other setting lets Suno rewrite your style text on every take.
 8. **No artist names in Suno fields.** Describe the sound: tempo, key, riff in plain musical words, drum mechanics, vocal persona.
@@ -93,7 +101,8 @@ the iteration loop with the user: `references/suno-playbook.md`.
 - Full list with the reasons behind each: `references/lessons.md`.
 
 ## Verification before you hand anything over
-- `validate`: harmony ≥ 0.85, arrangement ≥ 0.6, and the demo locks hardest at the project BPM.
+- `validate` (transcription copy): harmony ≥ 0.85, arrangement ≥ 0.6, and it locks hardest at the project BPM. This proves the measurements are right.
+- `similarity` (composed upload demo): ≤ 0.82. The style field must match the composed demo's key and tempo, not the original's.
 - `check`: PASS (style ≤ 1000, lyrics ≤ 3000, 0 shared 4-grams).
 - Tell the user what was measured and what was guessed (e.g. polyphonic chord voicings are approximate).
 - Don't redistribute the original audio. Send links to official uploads instead.

@@ -1,0 +1,29 @@
+{
+  "bpm": 88, "key": "A", "mode": "minor", "swing": 0.62, "loop_bars": 4,
+  "chords": ["i9", "i9", "VImaj7", "VImaj7", "iiø", "viio7", "V7b9", "V7b9"],
+  "comp": "x..x....x.x.....",
+  "melody": [[0,4,7],[4,2,3],[6,6,2],[12,4,0],
+             [16,6,8],[22,2,7],[24,8,3],
+             [32,4,5],[36,2,8],[38,6,11],[44,4,8],
+             [48,6,7],[54,2,8],[56,4,7],[60,4,-1]],
+  "bass": [[0,10,0],[10,2,3],[12,4,5],
+           [16,12,-4],[28,2,-2],[30,2,-4],
+           [32,8,2],[40,8,-1],
+           [48,10,7],[58,2,8],[60,4,7]],
+  "hook": [[0,2,7],[2,2,5],[4,8,3],[16,2,7],[18,2,5],[20,8,0]],
+  "drums": {"kick": [0,6,10,16,19,26], "snare": [4,12,20,28], "ghost": [11,27,31],
+            "hat": [0,2,4,6,8,10,12,14,15,16,18,20,22,24,26,28,29,30]},
+  "sections": [
+    {"name": "intro skit", "bars": 4, "drums": "none", "bass": false, "keys": true, "fade": "in"},
+    {"name": "beat intro (skit continues)", "bars": 4, "drums": "full"},
+    {"name": "pickup", "bars": 1, "drums": "light"},
+    {"name": "verse 1", "bars": 12, "drums": "full"},
+    {"name": "hook", "bars": 8, "drums": "light", "hook": true},
+    {"name": "break (drums out)", "bars": 1, "drums": "none"},
+    {"name": "verse 2", "bars": 12, "drums": "full"},
+    {"name": "hook", "bars": 8, "drums": "light", "hook": true},
+    {"name": "breakdown (drums out, chant)", "bars": 4, "drums": "none"},
+    {"name": "verse 3", "bars": 8, "drums": "full"},
+    {"name": "outro skit", "bars": 4, "drums": "none", "bass": false, "fade": "out"}
+  ]
+}

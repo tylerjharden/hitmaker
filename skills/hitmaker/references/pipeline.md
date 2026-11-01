@@ -64,6 +64,17 @@ Compares the original's instrumental (drums+bass+other) with the demo:
 harmony (chroma cosine per 2 s) median ≥ 0.85, arrangement (5 s energy contour correlation) ≥ 0.6,
 and the demo grid-locks hardest at the project BPM. Earlier results: Chromatek 0.93 / 0.62, GodLovesUgly remix 0.90 / 0.78.
 
+## compose  (the demo you upload)
+Plan file (see `templates/plan_example.json`): bpm, key, mode, swing, loop_bars, chords (one per half bar: i9, VImaj7,
+iiø, viio7, V7b9, bII, ...), comp rhythm, melody/bass/hook as [step, length, semitones], 2-bar drum steps, and sections with
+drums full/light/none, bass/keys/hook on or off, fade in/out. Write the sections to fit YOUR lyrics (one rap line = one bar).
+Voicings use smooth voice leading. Notes sit on the swung grid.
+
+## similarity  (copy-risk proxy)
+Beat-synchronous chroma (tempo-invariant), 8-beat windows, best match over every original window and all 12 keys.
+Calibration on GodLovesUgly: the rejected transcription scored 0.92, unrelated tracks 0.79-0.81, and the composed demo 0.80 (accepted target).
+It's a proxy: Suno's fingerprint check is unknown. Ship at 0.82 or below, and if Suno still rejects, change the loop more.
+
 ## check
 Style ≤ 1000 chars, lyrics ≤ 3000, syllables per line by section, shared 3/4-grams with the original transcript.
 Exit code 1 on failure, so it works as a gate.
