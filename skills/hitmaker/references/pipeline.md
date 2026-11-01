@@ -49,12 +49,13 @@ approximate. Describe them as colours ("minor, then a tense diminished passing c
 - Per section totals and hook candidates (repeated 3-grams by time). Text is withheld. Transcript is saved to `.private/`.
 - Typical rap: 3-4 syllables per beat at 85-95 BPM (12-16 per bar). A remix chop: 1-2 per beat with long gaps.
 
-## transcribe
+## transcribe  (measurement only; never upload or reuse it)
 basic-pitch on bass (28-300 Hz) and other (keys below MIDI 79, lead at 79 and above). Notes are quantized to the swung 16th grid and
 shifted so the first downbeat is a bar line. Drums: per-section 2-bar templates. The main snares come from the verified
 feel, plus 2 ghost notes and the top kick/hat steps. Sections with near-silent drum stems get no drums. **No vocal MIDI.**
 
 ## render
+Render the `compose`d song for upload. Render a transcription only to `validate` the measurements.
 - `hiphop`: piano with inharmonic partials + hammer noise, warm round bass, dusty kit, vinyl crackle, 12-bit crunch.
 - `bass`: 5-voice reese + formant growl with per-drop LFO rates (`--drops` = section indexes), lead, risers into drops.
 The demo only has to carry riffs, groove and arrangement into Suno Cover. It's meant to sound plain.

@@ -1,6 +1,8 @@
 # Lessons (each one cost real takes)
 
 ## Process
+- **The goal is an inspired work, never a clone.** The user: "what's the point if it's just a copy?" Measure the reference
+  for feel and devices, then write new notes and words. The upload demo is always a fresh composition.
 - **Remix of a remix → start from the original song.** Building the remix first gave "generic dubstep with rapping on
   top". The user's correction: make the song great in Suno first, then chop and remix it.
 - **Text-only prompts hit the genre prior.** 10+ takes of a careful 950-char prompt for a Bassnectar/G Jones track all

@@ -1,6 +1,6 @@
 ---
 name: hitmaker
-description: "Use when recreating a hit's feel in Suno: original first, then remix. Analyzes tempo/stems/flow, renders a demo, writes original lyrics and the Suno config."
+description: "Use when making an in-the-style-of hit in Suno (never a clone). Measures a reference, composes an original demo, writes original lyrics and the config."
 version: 1.0.0
 author: Tyler (Suno power user) + Hermes Agent
 license: MIT
@@ -13,10 +13,20 @@ metadata:
 
 # Hitmaker
 
-Turn a reference hit into a Suno track that captures its sound and structure without copying it. The track can be a rap song, a bass banger, or a bootleg of a remix.
-The method: **measure the reference, render an instrumental demo that carries its riffs, groove and
-arrangement, write original lyrics to its flow statistics, then let Suno re-produce it through Cover.**
-Text-only prompts hit Suno's genre prior and come out generic. An audio anchor plus a measured brief works.
+## Intent: in the style of, never a copy
+Hitmaker makes **spiritual successors**: new songs inspired by a reference hit that carry its feel, energy, devices
+and arrangement logic, with original notes and original words. A note-for-note reproduction is the wrong output
+(and pointless). If a request is for a clone, steer it to an inspired work.
+- **Take from the reference:** tempo feel, swing, groove mechanics, chord *colours* and harmonic tension, arrangement
+  shape (skits, stops, breakdowns, where the hook lands), vocal persona and flow statistics, sound-design vocabulary.
+- **Never take:** the melody, the exact loop/voicings/bass line, lyrics, samples or audio. The original's notes and words
+  are only *measured* (privately) so the new song can rhyme with its spirit.
+- Interpolation means borrowing a *feeling* or a device. Don't lift a recognisable phrase.
+
+## Method
+**Measure the reference, compose an original instrumental demo that carries the same kind of groove, harmony
+and arrangement, write original lyrics to the measured flow, then let Suno produce it through Cover.**
+Text-only prompts hit Suno's genre prior and come out generic. An original audio anchor plus a measured brief works.
 
 ## When to use
 - "Make a Suno song like <track>", "reverse-engineer <track> into a prompt", "write lyrics that flow like <rapper>"

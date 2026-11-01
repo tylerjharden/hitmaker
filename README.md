@@ -1,4 +1,8 @@
-# hitmaker: a Hermes Agent skill for making Suno hits from reference tracks
+# hitmaker: a Hermes Agent skill for making "in the style of" Suno hits
+
+Hitmaker makes spiritual successors, not copies. It measures what makes a reference track work (groove, swing,
+chord colours, arrangement devices, vocal flow) and helps you write and produce a NEW song with that energy:
+original notes, original lyrics. Note-for-note reproductions are out of scope, and Suno rejects them anyway.
 
 Measure a reference track, render an instrumental demo that carries its riffs, groove and arrangement, write
 original lyrics to its measured flow, and get a counted, ready-to-paste Suno config. Remixes too: build the
