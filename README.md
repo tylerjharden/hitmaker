@@ -11,7 +11,7 @@ song first, then chop it.
 ## Install (Hermes Agent)
 ```
 hermes skills tap add tylerjharden/hitmaker
-hermes skills install hitmaker
+hermes skills install tylerjharden/hitmaker/hitmaker
 bash ~/.hermes/skills/hitmaker/scripts/setup.sh      # one-time: audio/ML venv (CPU), needs ffmpeg
 ```
 Then ask your agent: "use hitmaker to make a Suno song in the style of <artist - track>".
