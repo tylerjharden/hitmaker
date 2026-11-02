@@ -16,6 +16,8 @@ Plan file (JSON), all keys optional except bpm/key/sections:
   "drums":  {"kick": [0,6,10,16,22,26], "snare": [4,12,20,28], "ghost": [15,27], "hat": [0,2,4,...]},  # 2-bar 16th steps
   "sections": [{"name": "intro skit", "bars": 4, "drums": "none", "bass": false, "keys": true}, ...]
 }
+optional: "bass_gate" (0.5 = short funky notes, 0.95 = legato), "piano_detune_cents" (e.g. 30 = slightly sharp, uneasy),
+          "comp": "" for no chords (riff-only piano)
 section flags: drums = full | light (no kick ghosts, half hats) | none ; bass, keys, hook = true/false ; fade = in/out
 """
 import json, numpy as np, pretty_midi
@@ -78,7 +80,7 @@ def compose(plan, out_mid):
             # keys: chord comping + top-line melody
             if s.get('keys', True):
                 for st in range(16):
-                    if comp[st] != 'x': continue
+                    if not comp or comp[st] != 'x': continue
                     half = (lb * 2 + st // 8) % len(chords)
                     v = voice(CHORDS[chords[half]], prev, root=root_keys); prev = v
                     t0 = gbar * bar + t_of(st)
@@ -89,12 +91,15 @@ def compose(plan, out_mid):
                 for st0, ln, semi in plan.get('melody', []):
                     if st0 // 16 != lb: continue
                     t0 = gbar * bar + t_of(st0 % 16)
-                    keys.notes.append(pretty_midi.Note(int(84 * fade), root_keys + 12 + semi, t0, t0 + ln * q * 0.95))
+                    vel = 96 if st0 % 4 == 0 else 80
+                    keys.notes.append(pretty_midi.Note(int(vel * fade), root_keys + 12 + semi, t0, t0 + ln * q * 0.95))
             if s.get('bass', True):
                 for st0, ln, semi in plan.get('bass', [[0, 14, 0]]):
                     if st0 // 16 != lb: continue
                     t0 = gbar * bar + t_of(st0 % 16)
-                    bass.notes.append(pretty_midi.Note(int(100 * fade), 36 + tonic + semi if 36 + tonic + semi < 52 else 24 + tonic + semi, t0, t0 + ln * q * 0.95))
+                    base = 36 + tonic if 36 + tonic <= 47 else 24 + tonic          # tonic in octave 2 (E2..D#3)
+                    acc = 112 if st0 % 4 == 0 else 96                                 # accents on the beat: funk articulation
+                    bass.notes.append(pretty_midi.Note(int(acc * fade), base + semi, t0, t0 + ln * q * plan.get('bass_gate', 0.95)))
             if s.get('hook', False):
                 for st0, ln, semi in plan.get('hook', []):
                     if st0 // 16 != lb % 2: continue
@@ -115,4 +120,4 @@ def compose(plan, out_mid):
     pm.write(str(out_mid))
     return dict(bpm=bpm, sections=sect_starts, duration=round(bar0 * bar, 2), midi_shift=0.0, downbeat=0.0,
                 key=f"{plan['key']} {plan.get('mode', 'minor')}", swing=sw, feel='backbeat',
-                section_names=[s['name'] for s in plan['sections']])
+                section_names=[s['name'] for s in plan['sections']], piano_detune_cents=plan.get('piano_detune_cents', 0))

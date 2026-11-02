@@ -61,8 +61,9 @@ $PY $HM render  proj --palette hiphop|bass [--drops 3,5]   # demo audio + stems
 $PY $HM validate proj                              # harmony, arrangement and tempo-lock scores vs the original
 # UPLOAD DEMO = an ORIGINAL composition from the measured facts (a transcription of a known song gets rejected by Suno)
 $PY $HM compose  song --plan plan.json             # new key/tempo/melody/voicings/bass, same feel + chord colours + arrangement
-$PY $HM render   song --palette hiphop
-$PY $HM similarity song --original proj            # copy-risk proxy: transcription 0.92, unrelated tracks 0.79-0.81; ship at 0.82 or below
+$PY $HM render   song --palette grit|hiphop|bass
+$PY $HM groove   song --original proj              # bass drive: level vs mix, notes/bar, sustain (the groove users actually hear)
+$PY $HM similarity song --original proj --controls <2-3 unrelated tracks>   # copy-risk MARGIN; ship at <= 0
 $PY $HM check --style style.txt --lyrics lyrics.txt --original-words proj/.private/vocal_words.json
 ```
 Stage details, thresholds and how to read each output: `references/pipeline.md`.
@@ -81,13 +82,25 @@ Files: `scripts/hitmaker.py` (all stages), `scripts/hm_render.py` (synth palette
 5. **The uploaded demo is instrumental and ORIGINAL.** Transcribe the reference only to measure and validate. Suno rejects
    uploads that fingerprint-match its catalog ("matches a song in our catalog"), and a transcription is a copy anyway. Upload a
    `compose`d demo: key ±2-3 semitones, tempo ±2-4%, new melody/voicings/bass/kick pattern, different loop length,
-   with the same feel, swing, chord colours and arrangement. Gate: `similarity` ≤ 0.82. Your lyrics replace the vocal.
+   with the same feel, swing and arrangement energy. Gate: `similarity` margin ≤ 0 against 2-3 unrelated controls.
+   The bass line and harmony drive the match more than the riff does: change the progression and the bass shape first.
 6. **Style field ≤ 1000 chars** (Suno truncates silently); lyrics ≤ about 3000. `check` counts both.
 7. **Variety Off** with an engineered brief. Any other setting lets Suno rewrite your style text on every take.
 8. **No artist names in Suno fields.** Describe the sound: tempo, key, riff in plain musical words, drum mechanics, vocal persona.
 9. **Lead with the hook/riff, then groove, then arrangement devices, then mix.** A list of 20 sound-design items averages out to generic.
 10. **Measure before writing lyrics.** Syllables per beat, where lines start, phrase length, who speaks where (`voices`).
     Remixes often chop the acapella down to about 3 words a bar. Originals may have skits, kids, sung hooks. Copy the *shape*.
+
+## Catchiness and attitude (what a demo must carry)
+- **Find the focal element and make it LOUD in the demo.** In GodLovesUgly it's the funky 8th-note bass, not the drums.
+  A sine-only bass vanishes on laptop speakers. Use a saturated bass with mid-range bite (`--palette grit`).
+- **A hook riff is short, repeated, and has one sour note** (a tritone or flat-6 sting, call and response). It isn't a pretty
+  chord progression. Chords drifting under a melody read as "jazzy and soft".
+- **Trace the sample lineage for attitude**: GodLovesUgly samples Ice Cube's "Once Upon a Time in the Projects" (Sir Jinx
+  over a Betty Davis funk sample). That's the attitude to aim for: funk grit and a confrontational storyteller.
+- **Name the era and edge, and exclude the soft priors**: "hardcore 90s hip hop, grimy, menacing" plus Exclude
+  `jazz, jazzy, smooth, soft, mellow, lo-fi, chillhop, neo-soul, R&B, conscious rap`. "Boom bap" plus "underground indie"
+  plus "wry storyteller" drifted to soft and introspective.
 
 ## Writing the lyrics
 Build a lyric spec from `voices` + `analyze` (per section: bars, syllables per bar, phrase starts, hook positions,
@@ -112,7 +125,9 @@ the iteration loop with the user: `references/suno-playbook.md`.
 
 ## Verification before you hand anything over
 - `validate` (transcription copy): harmony ≥ 0.85, arrangement ≥ 0.6, and it locks hardest at the project BPM. This proves the measurements are right.
-- `similarity` (composed upload demo): ≤ 0.82. The style field must match the composed demo's key and tempo, not the original's.
+- `similarity` (composed upload demo): margin ≤ 0 (no closer to the source than to unrelated music). The style field must
+  match the composed demo's key and tempo, not the original's.
+- `groove`: the demo's bass is no quieter than the reference's, notes/bar within about 1, sustain under 75% for funk.
 - `check`: PASS (style ≤ 1000, lyrics ≤ 3000, 0 shared 4-grams).
 - Tell the user what was measured and what was guessed (e.g. polyphonic chord voicings are approximate).
 - Don't redistribute the original audio. Send links to official uploads instead.

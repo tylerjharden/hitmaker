@@ -56,6 +56,8 @@ feel, plus 2 ghost notes and the top kick/hat steps. Sections with near-silent d
 
 ## render
 Render the `compose`d song for upload. Render a transcription only to `validate` the measurements.
+- `grit`: hard dry drums with parallel saturation, loud saturated funk bass (mid-range bite), bright piano with
+  `piano_detune_cents` from the plan, short room, light crackle. Use it for anything that should hit hard.
 - `hiphop`: piano with inharmonic partials + hammer noise, warm round bass, dusty kit, vinyl crackle, 12-bit crunch.
 - `bass`: 5-voice reese + formant growl with per-drop LFO rates (`--drops` = section indexes), lead, risers into drops.
 The demo only has to carry riffs, groove and arrangement into Suno Cover. It's meant to sound plain.
@@ -71,10 +73,17 @@ iiø, viio7, V7b9, bII, ...), comp rhythm, melody/bass/hook as [step, length, se
 drums full/light/none, bass/keys/hook on or off, fade in/out. Write the sections to fit YOUR lyrics (one rap line = one bar).
 Voicings use smooth voice leading. Notes sit on the swung grid.
 
-## similarity  (copy-risk proxy)
-Beat-synchronous chroma (tempo-invariant), 8-beat windows, best match over every original window and all 12 keys.
-Calibration on GodLovesUgly: the rejected transcription scored 0.92, unrelated tracks 0.79-0.81, and the composed demo 0.80 (accepted target).
-It's a proxy: Suno's fingerprint check is unknown. Ship at 0.82 or below, and if Suno still rejects, change the loop more.
+## similarity  (copy-risk margin)
+Beat-synchronous chroma (tempo-invariant), 8-beat windows, best match over every source window and all 12 keys.
+**Absolute scores depend on texture**: a loud minor-key 8th-note bass scores 0.83-0.91 against any bass-heavy track. So
+always pass `--controls` (2-3 unrelated tracks: project folders or plain audio files) and read the MARGIN = source minus closest control.
+Calibration on GodLovesUgly: rejected transcription +0.039 (Suno rejected it). Composed demos: v1 -0.034 (accepted),
+gritty v2 -0.036, final variant -0.075. Don't use a remix of the same song as a control.
+
+## groove
+Separates the demo with demucs and compares bass level vs mix, notes per bar, sustain and 16th placement against the
+reference window. GodLovesUgly verse: -13.3 dB, 7.9 notes/bar, 56% sustain. A held sine bass (3.6 notes/bar, 100% sustain) is
+why Suno heard "no bass".
 
 ## check
 Style ≤ 1000 chars, lyrics ≤ 3000, syllables per line by section, shared 3/4-grams with the original transcript.

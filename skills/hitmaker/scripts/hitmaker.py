@@ -26,7 +26,7 @@ SR_A = 22050
 def P(project): return Path(project).expanduser().resolve()
 
 def load_proj(d):
-    f = d/'project.json'
+    f = d/'project.json' if Path(d).is_dir() else Path(str(d)+'.json')
     return json.load(open(f)) if f.exists() else {}
 
 def _py(o):
@@ -474,18 +474,20 @@ def beat_chroma(path, bpm, downbeat, sr=SR_A):
     keep = B.sum(0) > 1e-6
     return B[:, keep] / (np.linalg.norm(B[:, keep], axis=0)+1e-9)
 
-def cmd_similarity(a):
-    """Tempo- and key-invariant melodic/harmonic similarity of the demo to the original, in 8-beat windows.
-    A transcription scores near 1.0. An original piece in the same style should score clearly lower.
-    This is a proxy: Suno's real fingerprint check is unknown."""
-    d = P(a.project); p = load_proj(d); o = P(a.original); po = load_proj(o)
-    A = beat_chroma(d/'reference_demo.wav', p['bpm'], 0.0)   # rendered demos start on a bar line
-    src = o/'original.mp3'
-    if a.instrumental and (o/'stems').exists():
+def _sim(demo_dir, orig_dir, instrumental=False):
+    p = load_proj(demo_dir); po = load_proj(orig_dir)
+    A = beat_chroma(demo_dir/'reference_demo.wav', p['bpm'], 0.0)   # rendered demos start on a bar line
+    src = orig_dir/'original.mp3' if orig_dir.is_dir() else orig_dir
+    if 'bpm' not in po:                 # a bare audio file or unanalyzed control: estimate the beat grid
+        import librosa
+        y = librosa.load(str(src), sr=SR_A, mono=True)[0]
+        tempo, beats = librosa.beat.beat_track(y=y, sr=SR_A, units='time')
+        po = {'bpm': float(np.atleast_1d(tempo)[0]), 'downbeat': float(beats[0]) if len(beats) else 0.0}
+    if instrumental and (orig_dir/'stems').exists():
         import librosa, soundfile as sf
-        mix = sum(librosa.load(str(o/'stems'/f'{n}.wav'), sr=SR_A)[0] for n in ('bass', 'other'))
-        src = o/'.private'/'_inst.wav'; (o/'.private').mkdir(exist_ok=True); sf.write(src, mix, SR_A)
-    B = beat_chroma(src, po['bpm'], po['downbeat'])
+        mix = sum(librosa.load(str(orig_dir/'stems'/f'{n}.wav'), sr=SR_A)[0] for n in ('bass', 'other'))
+        src = orig_dir/'.private'/'_inst.wav'; (orig_dir/'.private').mkdir(exist_ok=True); sf.write(src, mix, SR_A)
+    B = beat_chroma(src, po['bpm'], po.get('downbeat', 0.0))
     W = 8
     def wins(X): return np.array([X[:, i:i+W].flatten() for i in range(0, X.shape[1]-W, 2)])
     wa = wins(A); wa = wa/np.linalg.norm(wa, axis=1, keepdims=True)
@@ -493,9 +495,57 @@ def cmd_similarity(a):
     for r in range(12):
         wb = wins(np.roll(B, r, axis=0)); wb = wb/np.linalg.norm(wb, axis=1, keepdims=True)
         best = np.maximum(best, (wa @ wb.T).max(1))
-    print(f'copy-risk similarity (best key/tempo-invariant match per 8-beat window): median {np.median(best):.3f}, '
-          f'90th pct {np.percentile(best, 90):.3f}, max {best.max():.3f}')
-    save_proj(d, similarity_median=float(np.median(best)), similarity_p90=float(np.percentile(best, 90)))
+    return float(np.median(best)), float(np.percentile(best, 90))
+
+def cmd_similarity(a):
+    """Copy-risk check. Absolute similarity depends on texture (a loud minor-key bassline scores ~0.83-0.89 against ANY
+    bass-heavy track), so what counts is the MARGIN: similarity to the source minus the highest similarity to unrelated
+    control tracks (each an analyzed project with original.mp3 + bpm/downbeat). A transcription has a clearly positive
+    margin. An original piece in the same style has a margin of 0 or below. This is a proxy; Suno's real check is unknown."""
+    d = P(a.project)
+    t_med, t_p90 = _sim(d, P(a.original), a.instrumental)
+    print(f'source  {a.original}: median {t_med:.3f} (90th pct {t_p90:.3f})')
+    ctrl = []
+    for c in (a.controls or []):
+        m, _ = _sim(d, P(c)); ctrl.append(m); print(f'control {c}: median {m:.3f}')
+    out = dict(similarity_median=t_med, similarity_p90=t_p90)
+    if ctrl:
+        margin = t_med - max(ctrl); out['similarity_margin'] = margin
+        print(f'MARGIN (source minus closest control): {margin:+.3f}  -> ' + ('OK: no closer to the source than to unrelated music' if margin <= 0.0
+              else 'RISK: closer to the source than to unrelated music; change the riff/bass/harmony'))
+    else:
+        print('no --controls given: absolute value only (unreliable for bass-heavy demos)')
+    save_proj(d, **out)
+
+# ------------------------------------------------------------------ groove (does the demo carry the reference's drive?)
+def _bass_stats(bass, mix, bpm, db, a, b):
+    import librosa
+    spb = 60/bpm; q = spb/4
+    seg = bass[int(a*SR_A):int(b*SR_A)]; mseg = mix[int(a*SR_A):int(b*SR_A)]
+    lvl = 20*np.log10(np.sqrt(np.mean(seg**2))/(np.sqrt(np.mean(mseg**2))+1e-9)+1e-9)
+    o = librosa.onset.onset_strength(y=seg, sr=SR_A, hop_length=128); t = librosa.frames_to_time(np.arange(len(o)), sr=SR_A, hop_length=128)
+    pk = librosa.util.peak_pick(o, pre_max=3, post_max=3, pre_avg=10, post_avg=10, delta=0.5*o.std(), wait=4)
+    hist = np.bincount(np.round(((t[pk]+a-db)/q)).astype(int) % 16, minlength=16)
+    env = librosa.feature.rms(y=seg, hop_length=256)[0]
+    return dict(level_db=lvl, notes_per_bar=len(pk)/((b-a)/(4*spb)), sustain=float((env > 0.3*np.percentile(env, 95)).mean()), hist=hist)
+
+def cmd_groove(a):
+    """Compare bass drive (level vs mix, notes per bar, sustain, rhythm) between the reference and the demo.
+    Both are measured through demucs so the levels are comparable. Run demucs on the demo first via --separate."""
+    import librosa
+    d = P(a.project); o = P(a.original); pd_, po = load_proj(d), load_proj(o)
+    sep = d/'demo_sep'/'htdemucs'/'reference_demo'
+    if not sep.exists():
+        subprocess.run([sys.executable, '-m', 'demucs', '-n', 'htdemucs', '-o', str(d/'demo_sep'), str(d/'reference_demo.wav')],
+                       check=True, capture_output=True)
+    ob, om = audio(o, 'bass'), audio(o)
+    dbass = librosa.load(str(sep/'bass.wav'), sr=SR_A)[0]; dmix = librosa.load(str(d/'reference_demo.wav'), sr=SR_A)[0]
+    oa, ob_ = a.orig_window; da, db_ = a.demo_window
+    for lab, st in (('reference', _bass_stats(ob, om, po['bpm'], po['downbeat'], oa, ob_)),
+                    ('demo', _bass_stats(dbass, dmix, pd_['bpm'], 0.0, da, db_))):
+        print(f"{lab:9s} bass {st['level_db']:5.1f} dB vs mix | {st['notes_per_bar']:4.1f} notes/bar | sustain {st['sustain']:.0%} | "
+              f"16th histogram {' '.join(str(x) for x in st['hist'])}")
+    print('aim: notes/bar within ~1 of the reference; sustain under 75% for a funky line; bass no quieter than the reference')
 
 # ------------------------------------------------------------------ check
 def cmd_check(a):
@@ -549,13 +599,17 @@ def main():
     s.add_argument('--gap', type=float, default=0.35); s.set_defaults(f=cmd_voices)
     s = sp.add_parser('transcribe'); s.add_argument('project'); s.add_argument('--silence', type=float, default=0.01)
     s.add_argument('--no-swing', dest='swing', action='store_false'); s.set_defaults(f=cmd_transcribe)
-    s = sp.add_parser('render'); s.add_argument('project'); s.add_argument('--palette', choices=['hiphop', 'bass'], default='hiphop')
+    s = sp.add_parser('render'); s.add_argument('project'); s.add_argument('--palette', choices=['hiphop', 'grit', 'bass'], default='hiphop')
     s.add_argument('--drops', default='', help='comma list of section indexes that are drops (bass palette)'); s.set_defaults(f=cmd_render)
     s = sp.add_parser('validate'); s.add_argument('project'); s.set_defaults(f=cmd_validate)
     s = sp.add_parser('compose'); s.add_argument('project'); s.add_argument('--plan', required=True); s.set_defaults(f=cmd_compose)
     s = sp.add_parser('similarity'); s.add_argument('project'); s.add_argument('--original', required=True)
     s.add_argument('--instrumental', action='store_true', help='compare against the original bass+other stems only')
+    s.add_argument('--controls', nargs='*', help='UNRELATED tracks: analyzed project folders or plain audio files (beat grid estimated)')
     s.set_defaults(f=cmd_similarity)
+    s = sp.add_parser('groove'); s.add_argument('project'); s.add_argument('--original', required=True)
+    s.add_argument('--orig-window', type=float, nargs=2, default=[45, 95]); s.add_argument('--demo-window', type=float, nargs=2, default=[30, 55])
+    s.set_defaults(f=cmd_groove)
     s = sp.add_parser('check'); s.add_argument('--style'); s.add_argument('--lyrics'); s.add_argument('--original-words')
     s.set_defaults(f=cmd_check)
     a = ap.parse_args(); a.f(a)

@@ -30,6 +30,7 @@ Weirdness: the audio already carries the character, so keep it low (20-35). Chan
 | Feels slower/faster than the reference | BPM first in style text; Weirdness ≤ 30; check the demo locks at that BPM |
 | Rapper sings | `[Rapped]` in verse tags; add "melodic rap, singing" to Exclude |
 | Rapper fills every gap | fewer lines; "leave space between lines" in tags; blank lines between couplets |
+| Leans soft, jazzy, introspective | name era and edge ("hardcore 90s, grimy, menacing"); Exclude jazz, jazzy, smooth, soft, mellow, lo-fi, chillhop, neo-soul, R&B, conscious rap; make the focal bass loud in the demo |
 | Wrong genre (jazz, rock, house) | add it to Exclude; name the genre Suno knows ("boom bap", "midtempo bass", "riddim") |
 | Hook doesn't stick | shorter hook line; repeat it more often; put it at section ends |
 | Style ignored after the 1000th char | count characters; cut adjectives, keep the musical facts |

@@ -17,6 +17,12 @@
   "matches a song in our catalog". The Chromatek transcription got through, but don't rely on that. Compose the upload demo from
   measured facts (new key, tempo, notes) and gate it with `similarity`.
 
+- **First Crooked Teeth demo = soft and jazzy** (the user's verdict). Causes, all measured: a held sine bass (3.6 notes/bar, 100%
+  sustain vs 7.9 / 56% in the original), a pretty chord loop with no hook riff, and "boom bap / indie / wry storyteller"
+  wording. Fix: focal funk bass, a sour call-and-response piano riff, the hardcore-90s wording, and an Exclude list for the soft genres.
+- **Fixed similarity thresholds lie.** A louder bass pushed every variant to 0.83-0.85 absolute, yet each was closer to
+  unrelated tracks than to the source. Judge by the margin against controls.
+
 ## Analysis
 - Chromatek read 107.7 BPM in every librosa estimate. It's 160 BPM halftime (107.7 is the 2:3 alias). Grid-lock the drum stem.
 - GodLovesUgly: databases said 183 and 91.5; a coarse lock said 91.0; the fine drift sweep found 91.04 (2 ms drift vs 67 ms at 91.0).

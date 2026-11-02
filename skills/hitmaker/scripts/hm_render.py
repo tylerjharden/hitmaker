@@ -2,6 +2,8 @@
 
 Palettes
   hiphop : dusty sampled-piano feel, warm round bass, boom bap kit, vinyl crackle, 12-bit crunch
+  grit   : 90s hardcore: hard dry drums with a cracking snare, LOUD funky saturated bass with mid-range bite
+           (audible on laptop speakers), bright detuned piano, short room, 12-bit crunch
   bass   : reese/formant growl bass with per-section LFO rates, screaming lead, plucks, risers into drops
 The demo only has to carry riffs, groove and arrangement. Suno re-produces the sound.
 """
@@ -66,12 +68,13 @@ def render(d, palette='hiphop', drops=''):
         pitch = sosfilt(np.array([[al, 0, 0, 1, -(1-al), 0]]), pitch-pitch[0])+pitch[0]
         return pitch, np.clip(lp(gate, 200, 1), 0, 1), since, vel
 
+    det = p.get('piano_detune_cents', 0)/100.0
     def piano(notes, bright=3200):
         out = np.zeros(N)
         for n in notes:
             a = int(n.start*SR); L = min(int(min(n.end-n.start+1.2, 3.5)*SR), N-a)
             if L <= 0: continue
-            tt = np.arange(L)/SR; f = m2f(n.pitch); s = np.zeros(L)
+            tt = np.arange(L)/SR; f = m2f(n.pitch+det); s = np.zeros(L)
             for k in range(1, 9):
                 fk = f*k*np.sqrt(1+0.0004*k*k)
                 if fk > 9000: break
@@ -103,6 +106,23 @@ def render(d, palette='hiphop', drops=''):
         sub = lp(np.tanh(1.3*np.sin(2*np.pi*np.cumsum(np.where(pitch > 47, f/2, f)/SR))), 110)
         in_drop = np.isin(sec, drop_ix) if drop_ix else np.ones(N, bool)
         return (0.55*mid*in_drop+0.85*sub)*gate
+
+
+    def funk_bass(notes):
+        """saturated electric/synth bass: pluck filter envelope + drive gives mid-range bite; clean sub underneath"""
+        if not notes: return np.zeros(N)
+        out = np.zeros(N)
+        for n in notes:
+            a = int(n.start*SR); L = min(int((n.end-n.start+0.03)*SR), N-a)
+            if L <= 0: continue
+            tt = np.arange(L)/SR; f = m2f(n.pitch); ph = f*tt + rng.random()
+            raw = 0.6*saw(ph) + 0.4*np.sign(np.sin(2*np.pi*ph*1.0))
+            cut = 180 + 2600*np.exp(-tt/0.07)*(n.velocity/127)
+            body = svf(raw, cut, 0.55, 0)
+            sub = np.sin(2*np.pi*f*tt)
+            env = np.minimum(1, tt/0.003)*np.minimum(1, (L/SR-tt)/0.012)
+            out[a:a+L] += (np.tanh(2.8*body)*0.8 + 0.55*sub)*env*(n.velocity/127)
+        return out
 
     def lead(notes, soft):
         if not notes: return np.zeros(N)
@@ -146,21 +166,27 @@ def render(d, palette='hiphop', drops=''):
         ir = rng.standard_normal(L)*np.exp(-t/(sec/6.9)); ir = lp(ir, 6000); ir /= np.sqrt(np.sum(ir**2))
         return x+mix*fftconvolve(x, ir)[:len(x)]
 
-    dusty = palette == 'hiphop'
-    keys = piano(ins['Keys'].notes if 'Keys' in ins else [], 2800 if dusty else 3600)
-    bass = warm_bass(ins['Bass'].notes) if dusty else growl_bass(ins['Bass'].notes)
-    ld = lead(ins['Lead'].notes if 'Lead' in ins else [], soft=dusty)
+    dusty = palette == 'hiphop'; grit = palette == 'grit'
+    keys = piano(ins['Keys'].notes if 'Keys' in ins else [], 2800 if dusty else 6000 if grit else 3600)
+    if grit: bass = funk_bass(ins['Bass'].notes)
+    elif dusty: bass = warm_bass(ins['Bass'].notes)
+    else: bass = growl_bass(ins['Bass'].notes)
+    ld = lead(ins['Lead'].notes if 'Lead' in ins else [], soft=(dusty or grit))
     dr = drums(ins['Drums'].notes if 'Drums' in ins else [], dusty)
-    D = 1.0*dr[36]+0.8*dr[38]+0.5*dr[42]+0.4*dr[46]
+    if grit:   # harder snare + punch: parallel saturation on the drum bus
+        D = 1.15*dr[36]+1.0*dr[38]+0.45*dr[42]+0.35*dr[46]
+        D = 0.6*D + 0.5*np.tanh(3.0*D)
+    else:
+        D = 1.0*dr[36]+0.8*dr[38]+0.5*dr[42]+0.4*dr[46]
     fx = np.zeros(N)
-    if dusty:
+    if dusty or grit:
         crackle = np.zeros(N); pops = rng.random(N) < 6/SR
         crackle[pops] = rng.standard_normal(pops.sum())*0.5
         crackle = hp(crackle+0.004*rng.standard_normal(N), 1500)
-        fx += 0.08*crackle
-        keys = reverb(keys, 1.4, 0.15)
+        fx += (0.08 if dusty else 0.04)*crackle
+        keys = reverb(keys, 1.4 if dusty else 0.7, 0.15 if dusty else 0.08)
         crunch = lambda x: np.round(x*2048)/2048                 # 12-bit sampler grit
-        keys, D = crunch(lp(keys, 9000)), crunch(D)
+        keys, D = crunch(lp(keys, 9000 if dusty else 12000)), crunch(D)
     else:
         for i in drop_ix:
             if i >= len(sect): continue
@@ -169,7 +195,9 @@ def render(d, palette='hiphop', drops=''):
                 tt = np.arange(L)/L
                 fx[a:a+L] += svf(rng.standard_normal(L), 400+9000*tt**2, 0.7, 1)*tt**2*0.35
         keys = reverb(keys, 1.8, 0.25); ld = reverb(ld, 2.2, 0.25)
-    mix = 0.55*keys+0.75*bass+0.35*ld+0.8*D+fx
+    nrm = lambda x: x/(np.sqrt(np.mean(x**2))+1e-9)
+    if grit: mix = 0.15*nrm(keys)+0.32*nrm(bass)+0.05*nrm(ld)+0.24*nrm(D)+fx
+    else: mix = 0.55*keys+0.75*bass+0.35*ld+0.8*D+fx
     mix = hp(mix, 25)
     mix = np.tanh(1.3*mix/np.max(np.abs(mix)+1e-9)*1.6)
     mix *= 0.89/np.max(np.abs(mix))
